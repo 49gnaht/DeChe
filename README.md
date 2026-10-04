@@ -12,6 +12,7 @@ Dữ liệu bản đồ: © những người đóng góp cho OpenStreetMap (gi�
 
 ## Phiên bản
 
+- **Bản 5**: chọn xóm mình giữ và xóm đối thủ (Diễn Thái có sẵn Xóm 10, Xóm 3, Xóm 7, Xóm 8 cùng các xóm có tên trên OpenStreetMap; mục "Chỗ khác…" cho chạm lên bản đồ để đặt nhà và tự đặt tên xóm). Bản đồ tự xoay để nhà mình luôn nằm phía dưới màn hình, địch ở phía trên. Chơi 2 người thì mỗi máy đều thấy nhà mình ở dưới, người vào phòng được giữ xóm mình đã chọn.
 - **Bản 4.1**: kéo được bản đồ quá mép để căn cứ nằm sát rìa vẫn ra giữa màn hình; ô nhập tên xã hiện gợi ý ngay khi gõ (Photon).
 - **Bản 4**: bản đồ dựng từ dữ liệu thật của OpenStreetMap (đường, sông, kênh, ao hồ, ruộng, trường, chợ, đình chùa, nhà thờ, tên xóm). Diễn Thái tự tải đường thật khi mở game; mục "Xã khác" cho nhập tên một xã bất kỳ để tải bản đồ về chơi. Khi chơi 2 người, chủ phòng gửi luôn bản đồ cho người vào sau.
 - **Bản 3**: thêm âm thanh (chặt cây, đào vàng, gặt lúa, xây nhà, đánh nhau, kèn báo động, nhạc lên đời và thắng thua) và nút tắt tiếng. Tiếng được tạo ngay trong trang, không kèm file nào.
