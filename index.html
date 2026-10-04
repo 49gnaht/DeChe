@@ -333,7 +333,7 @@ function newGame(diff,map,side,seed,pvp,pk){overShown=false;const pack=pk!==unde
   afterLoad();
 }
 function afterLoad(){recount();updVis();paintTerrain();paintMiniTerr();
-  const tc=G.ents.find(e=>e.o===0&&e.t==='tc');cam.z=W>700?1.25:1;if(tc){cam.x=tc.x;cam.y=tc.y-40}clampCam();uiSig='';}
+  const tc=G.ents.find(e=>e.o===0&&e.t==='tc');cam.z=W>700?1.25:1;if(tc){cam.x=tc.x;cam.y=tc.y+(botH-topH)/(2*cam.z)}clampCam();uiSig='';}
 
 /* ---------- entities ---------- */
 function addUnit(t,o,x,y){const d=UD[t],m=d.hp*(d.mil?AGE_MUL[G.pl[o].age]:1);
@@ -616,8 +616,8 @@ const cv=$('cv'),ctx=cv.getContext('2d'),mini=$('mini'),mctx=mini.getContext('2d
 let W=300,H=300,DPR=1,topH=50,botH=110;
 function resize(){DPR=Math.min(window.devicePixelRatio||1,2);const r=cv.getBoundingClientRect();W=Math.max(50,r.width);H=Math.max(50,r.height);
   cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);topH=$('top').offsetHeight;botH=$('panel').offsetHeight;if(G)clampCam()}
-function clampCam(){const z=cam.z;let a=W/2/z,b=MPX-W/2/z;cam.x=a>b?MPX/2:clamp(cam.x,a,b);
-  a=(H/2-topH)/z;b=MPX-(H/2-botH)/z;cam.y=a>b?(a+b)/2:clamp(cam.y,a,b)}
+function clampCam(){const z=cam.z,ox=W*.42/z,oy=(H-topH-botH)*.42/z;let a=W/2/z-ox,b=MPX-W/2/z+ox;cam.x=a>b?MPX/2:clamp(cam.x,a,b);
+  a=(H/2-topH)/z-oy;b=MPX-(H/2-botH)/z+oy;cam.y=a>b?(a+b)/2:clamp(cam.y,a,b)}
 const s2w=(sx,sy)=>({x:(sx-W/2)/cam.z+cam.x,y:(sy-H/2)/cam.z+cam.y});
 const w2s=(wx,wy)=>({x:(wx-cam.x)*cam.z+W/2,y:(wy-cam.y)*cam.z+H/2});
 function zoomAt(sx,sy,z){const w=s2w(sx,sy);cam.z=clamp(z,.45,2.2);cam.x=w.x-(sx-W/2)/cam.z;cam.y=w.y-(sy-H/2)/cam.z;clampCam()}
@@ -923,6 +923,7 @@ function render(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#0b0d08';ctx.
   for(const i of terrDirty){const x=i%MAP,y=(i/MAP)|0;tctx.save();tctx.beginPath();tctx.rect(x*TS,y*TS,TS,TS);tctx.clip();drawTile(tctx,x,y);strokeRoads(tctx);tctx.restore()}if(terrDirty.length){terrDirty=[];miniDirty=true}
   const z=cam.z,ox=W/2-cam.x*z,oy=H/2-cam.y*z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*ox,DPR*oy);
   const vx0=-ox/z,vy0=-oy/z,vx1=vx0+W/z,vy1=vy0+H/z,sx=clamp(vx0,0,MPX),sy=clamp(vy0,0,MPX),ex=clamp(vx1,0,MPX),ey=clamp(vy1,0,MPX);
+  if(vx0<0||vy0<0||vx1>MPX||vy1>MPX){ctx.fillStyle='#1b2114';ctx.fillRect(-14,-14,MPX+28,MPX+28);ctx.fillStyle='#39452a';ctx.fillRect(-5,-5,MPX+10,MPX+10)}
   ctx.imageSmoothingEnabled=true;if(ex>sx&&ey>sy)ctx.drawImage(tcv,sx*TQ,sy*TQ,(ex-sx)*TQ,(ey-sy)*TQ,sx,sy,ex-sx,ey-sy);
   const on=e=>e.x>vx0-70&&e.x<vx1+70&&e.y>vy0-70&&e.y<vy1+70,shown=[];
   for(const e of G.ents){if(e.hp<=0||!on(e))continue;if(e.o!==0&&!visE(e))continue;shown.push(e)}
@@ -1199,18 +1200,26 @@ function packLoad(key){try{const p=JSON.parse(localStorage.getItem(key)||'null')
 function preview(){if(!started&&!Net.role){newGame(diffPick,mapPick,sidePick);showMenu('start')}else syncOpts()}
 async function loadDT(){if(!CANFETCH||OS.dtBusy)return;OS.dtBusy=true;OS.dt='Đang tải đường và sông thật của Diễn Thái…';osmUI();
   try{const bx=mkBox(DT_PRESET.lat,DT_PRESET.lon,DT_PRESET.half),d=await osmFetch(bx),p=buildPack(d,bx,DT_PRESET);
-    if(p.st[0]<3)throw new Error('thin');PACKS.dt=p;packSave('dcbt-pack-dt-1',p);OS.dt='';if(mapPick==='dt')preview()}
+    if(p.st[0]<3)throw new Error('thin');PACKS.dt=p;packSave('dcbt-pack-dt-1',p);OS.dt='';if(mapPick==='dt'){if(started&&!Net.role)say('Đã tải xong đường thật của Diễn Thái. Ván mới sẽ dùng bản đồ thật.');preview()}}
   catch(e){OS.dt='Chưa tải được đường thật, đang dùng bản vẽ tay.'}OS.dtBusy=false;osmUI()}
-async function osmSearch(q){if(OS.busy)return;if(!q){say('Nhập tên xã, kèm huyện hoặc tỉnh cho dễ tìm');return}if(!CANFETCH){osmUI();return}
+const PHOTON='https://photon.komoot.io/api/?limit=8&bbox=102.1,8.3,109.6,23.5&q=';let sugT=0,sugN=0;
+async function osmSuggest(q){const n=++sugN;
+  try{const r=await getJson(PHOTON+encodeURIComponent(q),null,8000);if(n!==sugN||OS.busy||$('oq').value.trim()!==q)return;const seen=new Set(),out=[];
+    for(const f of(r&&Array.isArray(r.features)?r.features:[])){const p=f.properties||{},g=f.geometry&&f.geometry.coordinates;
+      if(!Array.isArray(g)||!isFinite(+g[0])||!isFinite(+g[1])||!p.name||(p.countrycode&&String(p.countrycode).toUpperCase()!=='VN')||(p.osm_key!=='place'&&p.osm_key!=='boundary'))continue;
+      const parts=[];for(const v of[p.name,p.district,p.city,p.county,p.state])if(v&&!parts.includes(v))parts.push(String(v));const label=parts.slice(0,3).join(', ').slice(0,60);if(seen.has(label))continue;seen.add(label);
+      const e=p.extent;out.push({display_name:label,lat:+g[1],lon:+g[0],boundingbox:Array.isArray(e)&&e.length===4?[e[3],e[1],e[0],e[2]]:null});if(out.length>=5)break}
+    OS.cands=out;OS.msg=out.length?'':'Chưa thấy gợi ý. Gõ thêm huyện, tỉnh hoặc bấm Tải để tìm kỹ hơn.';osmUI()}catch(e){}}
+async function osmSearch(q){clearTimeout(sugT);sugN++;if(OS.busy)return;if(!q){say('Nhập tên xã, kèm huyện hoặc tỉnh cho dễ tìm');return}if(!CANFETCH){osmUI();return}
   OS.busy=true;OS.cands=[];OS.msg='Đang tìm “'+q+'”…';osmUI();
   try{const r=await getJson(NOMI+encodeURIComponent(q),null,20000);OS.cands=(Array.isArray(r)?r:[]).filter(c=>c&&isFinite(+c.lat)&&isFinite(+c.lon)).slice(0,4);
     OS.busy=false;if(!OS.cands.length)OS.msg='Không tìm thấy. Thử ghi thêm huyện, tỉnh.';else if(OS.cands.length===1){osmPick(0);return}else OS.msg='Chọn đúng nơi:'}
   catch(e){OS.busy=false;OS.msg='Không tìm được. Kiểm tra mạng rồi thử lại.'}osmUI()}
-async function osmPick(i){const c=OS.cands[i];if(!c||OS.busy)return;OS.busy=true;const name=String(c.display_name||c.name||'').split(',').slice(0,2).join(',').trim().slice(0,40)||'Bản đồ';
+async function osmPick(i){const c=OS.cands[i];if(!c||OS.busy)return;clearTimeout(sugT);sugN++;OS.busy=true;const name=String(c.display_name||c.name||'').split(',').slice(0,2).join(',').trim().slice(0,40)||'Bản đồ';
   OS.cands=[];OS.msg='Đang tải bản đồ '+name+'…';osmUI();
   try{let lat=+c.lat,lon=+c.lon,half=1300;const b=c.boundingbox;
     if(Array.isArray(b)&&b.length===4){const s=+b[0],n=+b[1],w=+b[2],e=+b[3],hl=(n-s)/2*111320,hw=(e-w)/2*111320*Math.cos(lat*Math.PI/180);if(isFinite(hl)&&isFinite(hw)){half=clamp(Math.max(hl,hw)*1.02,1100,2000);if(Math.max(hl,hw)<=2000){lat=(s+n)/2;lon=(w+e)/2}}}
-    const bx=mkBox(lat,lon,half),d=await osmFetch(bx),p=buildPack(d,bx,{name});PACKS.osm=p;packSave('dcbt-pack-osm-1',p);
+    const bx=mkBox(lat,lon,half),d=await osmFetch(bx),p=buildPack(d,bx,{name});PACKS.osm=p;packSave('dcbt-pack-osm-1',p);$('oq').value=name;
     OS.msg=p.st[0]<3?'Vùng này có quá ít dữ liệu đường nên bản đồ sẽ khá trống.':'';OS.busy=false;if(mapPick==='osm')preview()}
   catch(e){OS.busy=false;OS.msg='Không tải được bản đồ. Máy chủ bản đồ có thể đang bận, thử lại sau ít phút.'}osmUI()}
 function osmUI(){const el=$('ostat');if(!el)return;el.textContent='';const add=t=>el.appendChild(document.createTextNode(t)),pk=mapPick==='rnd'?null:PACKS[mapPick];
@@ -1341,7 +1350,7 @@ function dropSave(){try{localStorage.removeItem(SAVE)}catch(_){}}
 function fmtT(t){const m=Math.floor(t/60),s=Math.floor(t%60);return m+':'+(s<10?'0':'')+s}
 let menuKind='start';
 function showMenu(kind){running=false;menuKind=kind;if(kind==='win')sfx('win');else if(kind==='lose')sfx('defeat');const end=kind==='win'||kind==='lose',inNet=Net.role==='host'||Net.role==='guest',foe=inNet?'đối thủ':G.names?G.names[1].toLowerCase():'quân đỏ';$('ov').hidden=false;
-  $('ove').textContent=kind==='pause'?'Tạm dừng':end?'Trận đấu kết thúc':(mapPick==='dt'?'Diễn Thái, Diễn Châu, Nghệ An':mapPick==='osm'&&PACKS.osm?PACKS.osm.name:'Chiến thuật thời gian thực')+' · bản 4';
+  $('ove').textContent=kind==='pause'?'Tạm dừng':end?'Trận đấu kết thúc':(mapPick==='dt'?'Diễn Thái, Diễn Châu, Nghệ An':mapPick==='osm'&&PACKS.osm?PACKS.osm.name:'Chiến thuật thời gian thực')+' · bản 4.1';
   $('ovt').textContent=kind==='win'?'Chiến thắng':kind==='lose'?'Thất bại':'Đế Chế Bỏ Túi';
   $('ovs').textContent=kind==='win'?'Nhà chính của '+foe+' đã sụp. Bản đồ là của bạn.':kind==='lose'?'Nhà chính của bạn đã bị phá. Thử lại, lần này lên lính sớm hơn.':
     kind==='pause'?(inNet?'Đang đấu 2 người, mã phòng '+Net.code+'. Trận không dừng khi mở bảng này.':'Trận đấu đang dừng. Đổi lựa chọn rồi bấm Ván mới nếu muốn chơi lại từ đầu.'):
@@ -1366,6 +1375,7 @@ for(const id of['mapsel','sidesel','diff'])$(id).addEventListener('click',e=>{co
   try{localStorage.setItem('dcbt-opts',JSON.stringify({d:diffPick,m:mapPick,s:sidePick}))}catch(_){}
   syncOpts();if(!started&&id!=='diff'&&Net.role!=='guestwait'){if(!(mapPick==='osm'&&!PACKS.osm))newGame(diffPick,mapPick,sidePick);showMenu('start')}});
 $('ogo').onclick=()=>osmSearch($('oq').value.trim());
+$('oq').addEventListener('input',()=>{clearTimeout(sugT);sugN++;const q=$('oq').value.trim();if(!CANFETCH||OS.busy)return;if(q.length<3){OS.cands=[];OS.msg='';osmUI();return}sugT=setTimeout(()=>osmSuggest(q),380)});
 $('oq').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')osmSearch($('oq').value.trim())});
 $('oq').addEventListener('keyup',e=>e.stopPropagation());
 let last=0,acc=0,uiT=0,saveT=0;
