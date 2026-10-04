@@ -10,5 +10,6 @@ Toàn bộ game nằm trong một file `index.html`, không cần build.
 
 ## Phiên bản
 
+- **Bản 3**: thêm âm thanh (chặt cây, đào vàng, gặt lúa, xây nhà, đánh nhau, kèn báo động, nhạc lên đời và thắng thua) và nút tắt tiếng. Tiếng được tạo ngay trong trang, không kèm file nào.
 - **Bản 2**: vẽ lại dân, lính, nhà cửa và các địa điểm trong xã. Dân đội nón lá và cầm đúng dụng cụ khi chặt cây, đào vàng, gặt lúa, xây nhà. Lính và nhà đổi dáng khi lên đời.
 - **Bản 1** (tag `v1.0`): chơi với máy, bản đồ xã Diễn Thái, 2 người qua mã phòng.
